@@ -1,0 +1,6 @@
+destDB oracle://cms_orcon_prod/CMS_COND_31X_STRIP
+inputtag SiStripHitEffBadModules
+tag SiStripBadChannel_FromEfficiencyAnalysis_GR10_v1_offline
+since insertFirstRun
+till 
+usertext New IOVs appended: insertIOV
