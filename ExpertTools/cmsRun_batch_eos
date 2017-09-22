@@ -1,0 +1,79 @@
+#!/bin/bash
+
+
+# $1 : CMSSW version
+if [ "$1" = "" ] 
+then
+    echo " Need a CMSSW version. exit."
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE) (STOREDIR)"
+    exit
+fi
+
+# CMSSW directory
+CMSSWDIR=$1
+# storage directory
+STOREDIR=$CMSSWDIR/$4
+
+#starting directory
+echo "You are working here : "
+pwd
+echo "Your CMSSW directory is :"
+echo $CMSSWDIR
+echo
+
+cd $CMSSWDIR
+eval `scramv1 runtime -sh`
+cd -
+
+# $2 : config file
+if [ "$2" != "" ] 
+  then
+    echo "cp $CMSSWDIR/$2 ."
+    cp $CMSSWDIR/$2 . 
+  else
+    echo " Need a configuration file. exit."
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE) (STOREDIR)"
+    exit
+fi
+configfile=`echo $2 | awk -F/ '{print $NF}' | awk -F. '{print $1}'`
+
+cat ${configfile}.py > ${configfile}_temp.py
+
+# copy input file
+if [ "$3" != "" ] ; then
+    echo "cp $CMSSWDIR/$3 ."
+    cp $CMSSWDIR/$3 .
+fi
+
+echo "cmsRun ${configfile}_temp.py"
+cmsRun ${configfile}_temp.py
+
+echo
+ls -lhrt
+echo
+
+# print the content of the last .log file
+LOGFILE=`ls -rt | grep .log | tail -1`
+cLOGFILE=`echo $LOGFILE | wc -c`
+if [ $cLOGFILE -gt 3 ] ; then
+ if [ -f $LOGFILE ] ;  then
+    echo "Logfile : $LOGFILE"
+    echo ">>>>>>>>>>>>>>>>>>>>"
+    cat $LOGFILE
+    echo ">>>>>>>>>>>>>>>>>>>>"
+ fi
+fi
+
+echo ""
+
+
+
+# copy the root file  
+for OUTPUT_FILE in `ls -rt | grep .root | tail -1`
+do
+    echo "copy $OUTPUT_FILE to $STOREDIR/$OUTPUT_FILE"  
+    cp $OUTPUT_FILE $STOREDIR/$OUTPUT_FILE &> cp_output
+    cat cp_output
+done                                                                            
+
+exit
