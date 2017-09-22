@@ -154,7 +154,7 @@ filelistfull=`eos ls $EOSpath/$ERA | grep $runnumber`
 fullpathfilelist=""
 for file in `echo $filelist`
 do
- fullpathfilelist+="'root://cms-xrd-global.cern.ch//$EOSpath/$ERA/$file',"
+ fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/$file',"
 done
 fullpathfilelist=`echo $fullpathfilelist | sed 's/.$//'`
 echo $fullpathfilelist
@@ -169,7 +169,7 @@ fi
 
 cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
 sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
-sed -i "s|'root://cms-xrd-global.cern.ch//newfilelocation'|$fullpathfilelist|g" "SiStripHitEff_run$runnumber.py"
+sed -i "s|'root://eoscms//eos/cms/newfilelocation'|$fullpathfilelist|g" "SiStripHitEff_run$runnumber.py"
 
 echo "Launching cmsRun ..."
 
@@ -190,7 +190,7 @@ mv BadModules.log BadModules_input.txt
 
 cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
 sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
-sed -i "s|'root://cms-xrd-global.cern.ch//newfilelocation'|$fullpathfilelist|g" "SiStripHitEff_run$runnumber.py"
+sed -i "s|'root://eoscms//eos/cms/newfilelocation'|$fullpathfilelist|g" "SiStripHitEff_run$runnumber.py"
 
 echo "Launching cmsRun for second job ..."
 
