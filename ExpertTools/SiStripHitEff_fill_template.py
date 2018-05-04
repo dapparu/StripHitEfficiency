@@ -21,7 +21,7 @@ process.SiStripHitEff = cms.EDAnalyzer("SiStripHitEffFromCalibTree",
     FILELIST
     ),
     Threshold         = cms.double(0.1),
-    nModsMin          = cms.int32(25),
+    nModsMin          = cms.int32(5),
     doSummary         = cms.int32(0),
     #ResXSig           = cms.untracked.double(5),
     SinceAppendMode   = cms.bool(True),
@@ -29,9 +29,11 @@ process.SiStripHitEff = cms.EDAnalyzer("SiStripHitEffFromCalibTree",
     Record            = cms.string('SiStripBadStrip'),
     doStoreOnDB       = cms.bool(True),
     BadModulesFile    = cms.untracked.string("BadModules_input.txt"),   # default "" no input
+    AutoIneffModTagging = cms.untracked.bool(True),   # default true, automatic limit for each layer to identify inefficient modules
     ClusterMatchingMethod  = cms.untracked.int32(4),     # default 0  case0,1,2,3,4
     ClusterTrajDist   = cms.untracked.double(15),   # default 64
     StripsApvEdge     = cms.untracked.double(10),   # default 10  
+    UseOnlyHighPurityTracks = cms.untracked.bool(True), # default True
     SpaceBetweenTrains = cms.untracked.int32(25),   # default 25
     ShowEndcapSides   = cms.untracked.bool(False),  # default True
     ShowRings         = cms.untracked.bool(False),  # default False
