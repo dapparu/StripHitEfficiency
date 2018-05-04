@@ -79,17 +79,17 @@ mkdir -p $wwwdir/$ERA/TrendPlots
 
 echo "Using outputs from 'standard' directories"
 mkdir -p $wwwdir/$ERA/TrendPlots/standard
-python2.6 DrawHitEfficiencyVsRun.py $ERA standard
+python2.7 DrawHitEfficiencyVsRun.py $ERA standard
 StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA standard
 
 echo "Using outputs from 'withMasking' directories"
 mkdir -p $wwwdir/$ERA/TrendPlots/withMasking
-python2.6 DrawHitEfficiencyVsRun.py $ERA withMasking
+python2.7 DrawHitEfficiencyVsRun.py $ERA withMasking
 StoreTrendPlotsOutput SiStripHitEffTrendPlot $ERA withMasking
 
 echo "Using outputs from 'withMasking' directories for results vs inst. lumi."
 mkdir -p $wwwdir/$ERA/TrendPlots/vsLumi
-python2.6 DrawHitEfficiencyVsLumi.py $ERA
+python2.7 DrawHitEfficiencyVsLumi.py $ERA
 StoreTrendPlotsOutput SiStripHitEffTrendPlotVsLumi $ERA vsLumi
 
 

@@ -17,7 +17,7 @@ void SiStripHitEff_CompareRuns(TString ERA1, TString runnumber1, TString ERA2, T
   TString wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency/";
   
   TString dir1=wwwdir+"/"+ERA1+"/run_"+runnumber1+"/";
-  TString dir2=wwwdir+"/"+ERA1+"/run_"+runnumber2+"/";
+  TString dir2=wwwdir+"/"+ERA2+"/run_"+runnumber2+"/";
   
   TFile *f1= new TFile(dir1+"standard/rootfile/SiStripHitEffHistos_run"+runnumber1+".root");
   TFile *f2= new TFile(dir2+"standard/rootfile/SiStripHitEffHistos_run"+runnumber2+".root");
@@ -28,7 +28,7 @@ void SiStripHitEff_CompareRuns(TString ERA1, TString runnumber1, TString ERA2, T
   TH1F *all_r2, *all2_r2;
 
   if (f1->IsZombie() || f2->IsZombie()){
-    std::cout << endl << "---> You should first execute the command: './HitEffDriver_woRoot.sh  /store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree/GR16/YOURCALIBRATIONTREE' for the run(s) you want to analyze" << endl;
+    std::cout << endl << "---> You should first execute the command: './HitEffDriver_woRoot.sh  /store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree/ERA/YOURCALIBRATIONTREE' for the run(s) you want to analyze" << endl;
     return;
   }  
   

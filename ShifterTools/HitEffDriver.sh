@@ -128,29 +128,49 @@ StoreOutputs ()
 
 
 
-if [ $# != 1 ]; then
-  echo "Usage: $0 runnumber"
+if [ $# -lt 1 ]; then
+  echo "Usage: $0 [-n #files] [-e era] runnumber"
   echo "Runs the Hit Efficiency Study"
   exit 0;
 fi
 
-  #####################
-  # Run period to be updated manually
-  ERA="GR17"
-  echo "era: $ERA"
-  #####################
 
+# Default values for options
+# Run period
+ERA="GR18"
+# nb of files to be processed for the run
+NFILES="4"
+
+# Setting options
+while getopts ":n:e:" OPT
+do
+  #echo $OPT $OPTARG
+  case $OPT in
+    n)  NFILES="$OPTARG";;
+    e)  ERA="$OPTARG";;
+    \?) echo "Invalid option -$OPTARG"
+  esac
+done
+shift $((OPTIND-1))
+
+echo "era: $ERA"
+
+# Setting argument
+# run number
 runnumber=$1
-echo "The run number is $runnumber"
+echo "run number: $runnumber"
+
+echo "$NFILES files to be processed,"
 
 EOSpath="/store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree"
-echo "The full directory path is $EOSpath/$ERA"
+echo "from directory: $EOSpath/$ERA"
 
 # get the first 2 files of that run
-filelist=`eos ls $EOSpath/$ERA | grep $runnumber | sort -t '_' -k 3n | head -2`
+filelist=`eos ls $EOSpath/$ERA | grep $runnumber | sort -t '_' -k 3n | head -$NFILES`
 filelistfull=`eos ls $EOSpath/$ERA | grep $runnumber`
 
 
+echo "files that will be used:"
 fullpathfilelist=""
 for file in `echo $filelist`
 do
@@ -164,6 +184,9 @@ then
  echo "No file found in $EOSpath/$ERA for run $runnumber"
  exit
 fi
+
+echo "--------------------------"
+
 
 #cp dbfile_31X_IdealConditions.db dbfile.db
 
