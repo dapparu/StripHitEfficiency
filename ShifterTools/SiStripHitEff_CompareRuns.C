@@ -8,6 +8,9 @@
 #include <iostream>
 #include <TLatex.h>
 
+set<uint32_t> read_bad_modules(TString filename);
+void SiStripHitEff_CompareIneffMod(TString ERA1, TString runnumber1, TString ERA2, TString runnumber2);
+
 void bookGraph (TGraphAsymmErrors *g, int nL);
 void SiStripHitEff_CompareRuns(TString ERA1, TString runnumber1, TString ERA2, TString runnumber2, TString type="standard");
 
@@ -132,6 +135,8 @@ void SiStripHitEff_CompareRuns(TString ERA1, TString runnumber1, TString ERA2, T
   leg2->Draw("same"); 
   c->SaveAs("SiStripHitEff_CompareRuns_AllModules.png","png");
 
+  // Compare list of inefficient modules
+  SiStripHitEff_CompareIneffMod(ERA1, runnumber1, ERA2, runnumber2);
   
   return;
 }
@@ -163,4 +168,89 @@ void bookGraph (TGraphAsymmErrors *g, int nL){
     g->GetXaxis()->SetBinLabel(((k+1)*100+2)/(nL)-4,label[k-1]);
   
   return;
+}
+
+set<uint32_t>  read_bad_modules(TString filename){  // read bad modules to mask
+
+  ifstream badModules_file;
+  set<uint32_t> badModules_list;
+  
+  if(!filename.IsNull()) {
+	badModules_file.open(filename.Data());
+	uint32_t badmodule_detid;
+	int mods, fiber1, fiber2, fiber3;
+	if(badModules_file.is_open()) {
+      string line;
+	  while ( getline (badModules_file,line) ) {
+		if(badModules_file.eof()) continue;
+		stringstream ss(line);
+		ss >> badmodule_detid >> mods >> fiber1 >> fiber2 >> fiber3;
+		if(badmodule_detid!=0 && mods==1 && (fiber1==1 || fiber2==1 || fiber3==1) )
+	      badModules_list.insert(badmodule_detid);
+	  }
+      badModules_file.close();
+	}
+  }
+  
+  return badModules_list;
+}
+
+
+// Compare lists of inefficient modules and print a tracker map
+void SiStripHitEff_CompareIneffMod(TString ERA1, TString runnumber1, TString ERA2, TString runnumber2){
+
+  int nLayers = 34;
+
+  TString wwwdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency/";
+  
+  TString dir1=wwwdir+"/"+ERA1+"/run_"+runnumber1+"/";
+  TString dir2=wwwdir+"/"+ERA2+"/run_"+runnumber2+"/";
+  
+  TString filename1 = dir1+"withMasking/QualityLog/BadModules_input.txt";
+  TString filename2 = dir2+"withMasking/QualityLog/BadModules_input.txt";
+
+  set<uint32_t> badModules_list1 = read_bad_modules(filename1.Data());
+  set<uint32_t> badModules_list2 = read_bad_modules(filename2.Data());
+  
+  set<uint32_t>::iterator itBadMod1;
+  set<uint32_t>::iterator itBadMod2;
+  bool inBothFile=false;
+  
+  ofstream badModules_file_diff;
+  badModules_file_diff.open("bad_modules_diff.txt");
+  ofstream badModules_file_diff_formap;
+  badModules_file_diff_formap.open("bad_modules_diff_formap.txt");
+  
+  for (itBadMod1=badModules_list1.begin(); itBadMod1!=badModules_list1.end(); ++itBadMod1){ 
+    inBothFile=false;
+  	for (itBadMod2=badModules_list2.begin(); itBadMod2!=badModules_list2.end(); ++itBadMod2)
+	  if (*itBadMod1==*itBadMod2) inBothFile=true;
+	if(inBothFile){ 
+	  badModules_file_diff<<"| "<<*itBadMod1<<endl;
+	  badModules_file_diff_formap<<*itBadMod1<<" 2"<<endl;
+    }
+	else{ 
+	  badModules_file_diff<<"- "<<*itBadMod1<<endl;
+	  badModules_file_diff_formap<<*itBadMod1<<" 1"<<endl;
+    }
+  }
+  
+  for (itBadMod2=badModules_list2.begin(); itBadMod2!=badModules_list2.end(); ++itBadMod2){
+    inBothFile=false;
+  	for (itBadMod1=badModules_list1.begin(); itBadMod1!=badModules_list1.end(); ++itBadMod1)
+	  if (*itBadMod2==*itBadMod1) { inBothFile=true;}
+	if(!inBothFile) { 
+	  badModules_file_diff<<"+ "<<*itBadMod1<<endl;
+	  badModules_file_diff_formap<<*itBadMod2<<" 3"<<endl;
+    }
+  }	  
+  
+  badModules_file_diff_formap.close();
+  badModules_file_diff.close();
+  gSystem->Exec("sort -k 2 -n bad_modules_diff.txt > bad_modules_diff_sorted.txt");
+  gSystem->Exec("mv -f bad_modules_diff_sorted.txt bad_modules_diff.txt");
+  
+  TString title="Inefficient modules (only in run "+runnumber1+" in blue, common to both runs in green, only in run "+runnumber2+" in red)";
+  TString command="print_TrackerMap bad_modules_diff.txt '"+title+"' SiStripHitEff_CompareIneffMod_map.pdf 2400 False False 1 3";
+  gSystem->Exec(command.Data());
 }
