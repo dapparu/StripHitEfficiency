@@ -92,5 +92,10 @@ mkdir -p $wwwdir/$ERA/TrendPlots/vsLumi
 python2.7 DrawHitEfficiencyVsLumi.py $ERA
 StoreTrendPlotsOutput SiStripHitEffTrendPlotVsLumi $ERA vsLumi
 
+echo "Using outputs from 'withMasking' directories for results vs pile-up"
+mkdir -p $wwwdir/$ERA/TrendPlots/vsPU
+python2.7 DrawHitEfficiencyVsLumi.py $ERA 1
+StoreTrendPlotsOutput SiStripHitEffTrendPlotVsPU $ERA vsPU
+
 
 echo "Done."
