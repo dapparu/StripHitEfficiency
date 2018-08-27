@@ -55,7 +55,8 @@ def add_points(graph, directory, subdir, layer):
         # efficiency for a given layer
         found = hfound.GetBinContent(int(layer))
         total = htotal.GetBinContent(int(layer))
-        eff = found/total
+        if total>0: eff = found/total
+        else: eff = 0
         #print run, eff
 
         graph.SetPoint(ipt, ipt+1, eff)
