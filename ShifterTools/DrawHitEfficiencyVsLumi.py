@@ -19,13 +19,13 @@ def get_layer_name(layer):
   return ''
 
 
-def add_points(graph, directory, layer):
+def add_points(graph, directory, layer, usePU):
 
   ipt=graph.GetN()
 
   # List runs
   for root, directories, files in os.walk(directory):
-    for rundir in directories:
+    for rundir in sorted(directories):
       if "run_" in rundir:
         # start to process run
         run = rundir[4:]
@@ -47,9 +47,10 @@ def add_points(graph, directory, layer):
           continue
 
         # lumi
-        hlumi = fdir.Get("instLumi")
+        if usePU==0 : hlumi = fdir.Get("instLumi")
+        else : hlumi = fdir.Get("PU")
         if hlumi == None:
-          print '  Missing lumi histogram in file '+frun.GetName()
+          print '  Missing lumi/pu histogram in file '+frun.GetName()
           continue
         lumi = hlumi.GetMean()
         lumi_err = hlumi.GetRMS()
@@ -58,7 +59,8 @@ def add_points(graph, directory, layer):
         # efficiency for a given layer
         found = hfound.GetBinContent(layer)
         total = htotal.GetBinContent(layer)
-        eff = found/total
+        if total>0: eff = found/total
+        else: eff = 0
         #print run, eff, lumi, lumi_err
 
         # remove run without lumi informations
@@ -66,6 +68,8 @@ def add_points(graph, directory, layer):
           eff_vs_lumi.SetPoint(ipt, lumi, eff)
           low = TEfficiency.Bayesian(total, found, .683, 1, 1, False)
           up = TEfficiency.Bayesian(total, found, .683, 1, 1, True);
+          if eff-low > 0.01: print 'large error bar for run', run, 'layer', layer, 'eff:', '{:.4f}'.format(eff), 'err:', '{:.4f}'.format(eff-low)
+          #if lumi_err > lumi/3.: print 'wide lumi range for run', run, 'layer', layer, 'eff:', '{:.4f}'.format(eff), 'lumi/pu:', '{:.4f}'.format(lumi), 'rms:', '{:.4f}'.format(lumi_err)
           eff_vs_lumi.SetPointError(ipt, lumi_err, lumi_err, eff-low, up-eff)
           ipt+=1
         frun.Close()
@@ -75,11 +79,15 @@ def add_points(graph, directory, layer):
 hiteffdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
 
 if len(sys.argv)<2:
-  print "Syntax is:  DrawHitEfficiencyVsLumi.py  ERA  "
-  print "  example:  DrawHitEfficiencyVsLumi.py GR17 "
+  print "Syntax is:  DrawHitEfficiencyVsLumi.py  ERA [usePU] "
+  print "  example:  DrawHitEfficiencyVsLumi.py GR17 [1]"
   exit() 
 
 era=str(sys.argv[1])
+
+# option to show results as a function of pu instead of inst. lumi.
+usePU=0
+if len(sys.argv)>=3: usePU=int(sys.argv[2])
 
 
 #---------------------
@@ -96,11 +104,12 @@ for layer in range(1,35):
 
   graphs.append( TGraphAsymmErrors() )
   eff_vs_lumi = graphs[-1]
-  xlabels = add_points(eff_vs_lumi, hiteffdir+"/"+era, layer)
+  xlabels = add_points(eff_vs_lumi, hiteffdir+"/"+era, layer, usePU)
 
   eff_vs_lumi.SetTitle(get_layer_name(layer))
-  eff_vs_lumi.GetXaxis().SetTitle("inst. lumi [x10^{30}]")
   eff_vs_lumi.GetYaxis().SetTitle("hit efficiency")
+  if usePU==0 : eff_vs_lumi.GetXaxis().SetTitle("inst. lumi [x10^{30}]")
+  else : eff_vs_lumi.GetXaxis().SetTitle("PU")
 
   eff_vs_lumi.SetMarkerStyle(20)
   eff_vs_lumi.SetMarkerSize(.8)
@@ -115,6 +124,6 @@ for layer in range(1,35):
   eff_vs_lumi_lastpt.SetMarkerColor(2)
   eff_vs_lumi_lastpt.Draw("P")
 
-  c1.Print("SiStripHitEffTrendPlotVsLumi_layer"+str(layer)+".png")
-
+  if usePU==0 : c1.Print("SiStripHitEffTrendPlotVsLumi_layer"+str(layer)+".png")
+  else : c1.Print("SiStripHitEffTrendPlotVsPU_layer"+str(layer)+".png")
 
