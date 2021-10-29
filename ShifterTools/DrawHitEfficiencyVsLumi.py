@@ -3,6 +3,7 @@ import os
 import subprocess
 import math
 from ROOT import TCanvas, TGraph, TGraphAsymmErrors, TFile, TEfficiency
+import ctypes
 
 import ROOT
 ROOT.gROOT.SetBatch(True)
@@ -43,14 +44,14 @@ def add_points(graph, directory, layer, usePU):
         htotal = fdir.Get("all")
 
         if htotal == None:
-          print '  Missing histogram in file '+frun.GetName()
+          print('  Missing histogram in file '+frun.GetName())
           continue
 
         # lumi
         if usePU==0 : hlumi = fdir.Get("instLumi")
         else : hlumi = fdir.Get("PU")
         if hlumi == None:
-          print '  Missing lumi/pu histogram in file '+frun.GetName()
+          print('  Missing lumi/pu histogram in file '+frun.GetName())
           continue
         lumi = hlumi.GetMean()
         lumi_err = hlumi.GetRMS()
@@ -68,7 +69,7 @@ def add_points(graph, directory, layer, usePU):
           eff_vs_lumi.SetPoint(ipt, lumi, eff)
           low = TEfficiency.Bayesian(total, found, .683, 1, 1, False)
           up = TEfficiency.Bayesian(total, found, .683, 1, 1, True);
-          if eff-low > 0.01: print 'large error bar for run', run, 'layer', layer, 'eff:', '{:.4f}'.format(eff), 'err:', '{:.4f}'.format(eff-low)
+          if eff-low > 0.01: print('large error bar for run', run, 'layer', layer, 'eff:', '{:.4f}'.format(eff), 'err:', '{:.4f}'.format(eff-low))
           #if lumi_err > lumi/3.: print 'wide lumi range for run', run, 'layer', layer, 'eff:', '{:.4f}'.format(eff), 'lumi/pu:', '{:.4f}'.format(lumi), 'rms:', '{:.4f}'.format(lumi_err)
           eff_vs_lumi.SetPointError(ipt, lumi_err, lumi_err, eff-low, up-eff)
           ipt+=1
@@ -79,8 +80,8 @@ def add_points(graph, directory, layer, usePU):
 hiteffdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
 
 if len(sys.argv)<2:
-  print "Syntax is:  DrawHitEfficiencyVsLumi.py  ERA [usePU] "
-  print "  example:  DrawHitEfficiencyVsLumi.py GR17 [1]"
+  print("Syntax is:  DrawHitEfficiencyVsLumi.py  ERA [usePU] ")
+  print("  example:  DrawHitEfficiencyVsLumi.py GR17 [1]")
   exit() 
 
 era=str(sys.argv[1])
@@ -100,7 +101,7 @@ c1 = TCanvas()
 
 for layer in range(1,35):
 
-  print 'producing trend plot for layer '+str(layer)
+  print('producing trend plot for layer '+str(layer))
 
   graphs.append( TGraphAsymmErrors() )
   eff_vs_lumi = graphs[-1]
@@ -117,8 +118,8 @@ for layer in range(1,35):
 
   eff_vs_lumi_lastpt = TGraphAsymmErrors()
   npt = eff_vs_lumi.GetN()
-  x, y = ROOT.Double(0), ROOT.Double(0)
-  eff_vs_lumi.GetPoint(npt-1, x, y)
+  x, y = ROOT.double(0), ROOT.double(0)
+  eff_vs_lumi.GetPoint(npt-1, ctypes.c_double(x), ctypes.c_double(y))
   eff_vs_lumi_lastpt.SetPoint(0, x, y)
   eff_vs_lumi_lastpt.SetMarkerStyle(24)
   eff_vs_lumi_lastpt.SetMarkerColor(2)

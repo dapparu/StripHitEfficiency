@@ -49,7 +49,7 @@ def add_points(graph, directory, subdir, layer):
         htotal = fdir.Get("all")
 
         if htotal == None: 
-          print '  Missing histogram in file '+frun.GetName()
+          print('  Missing histogram in file '+frun.GetName())
           continue
 
         # efficiency for a given layer
@@ -139,8 +139,8 @@ def draw_subdet(graphs, subdet):
 hiteffdir="/afs/cern.ch/cms/tracker/sistrvalidation/WWW/CalibrationValidation/HitEfficiency"
 
 if len(sys.argv)<3:
-  print "Syntax is:  DrawHitEfficiencyVsRun.py  ERA  SUBDIRECTORY"
-  print "  example:  DrawHitEfficiencyVsRun.py GR17 standard"
+  print("Syntax is:  DrawHitEfficiencyVsRun.py  ERA  SUBDIRECTORY")
+  print("  example:  DrawHitEfficiencyVsRun.py GR17 standard")
   exit() 
 
 era=str(sys.argv[1])
@@ -157,7 +157,7 @@ graphs=[]
 
 for layer in range(1,35):
 
-  print 'producing trend plot for layer '+str(layer)
+  print('producing trend plot for layer '+str(layer))
 
   graphs.append( TGraphAsymmErrors() )
   eff_vs_run = graphs[-1]
