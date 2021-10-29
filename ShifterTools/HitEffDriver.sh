@@ -137,7 +137,7 @@ fi
 
 # Default values for options
 # Run period
-ERA="GR18"
+ERA="GR21"
 # nb of files to be processed for the run
 NFILES="4"
 
