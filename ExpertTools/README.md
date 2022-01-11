@@ -10,7 +10,7 @@
 
 It queries the Run Registry and list the runs from the fill with their certification for the ExpressStream and their statistics.
 It prints a summary of the fraction of the fill flagged as good.
-It uses `query.sh` and `rhapy.py` to send the query to the Run Registry.
+It uses `getRunsInFill.py` to query the Run Registry with the runregistry python package that can be installed with: `pip install runregistry`.
 
 ## Check the number of calibTree files available for the fill (optional)
 

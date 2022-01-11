@@ -11,8 +11,7 @@ echo analyzing fill $FILLNUMBER
 
 
 # Get list of runs and fill runlist.txt
-source query.sh
-GetRunsInFill $FILLNUMBER
+python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
 
 
 # Print infos and select good runs

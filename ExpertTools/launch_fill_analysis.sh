@@ -16,8 +16,7 @@ CODEDIR=`pwd`
 # Get list of good runs and corresponding files
 
 # Get list of runs and fill runlist.txt
-source query.sh
-GetRunsInFill $FILLNUMBER
+python3 getRunsInFill.py $FILLNUMBER | grep -v ">>" > runlist.txt
 
 
 SHORTFILELIST=""
