@@ -137,7 +137,7 @@ fi
 
 # Default values for options
 # Run period
-ERA="GR21"
+ERA="GR18"
 # nb of files to be processed for the run
 NFILES="4"
 
@@ -165,28 +165,106 @@ echo "$NFILES files to be processed,"
 EOSpath="/store/group/dpg_tracker_strip/comm_tracker/Strip/Calibration/calibrationtree"
 echo "from directory: $EOSpath/$ERA"
 
-# get the first 2 files of that run
+# get the first files of that run
 filelist=`eos ls $EOSpath/$ERA | grep $runnumber | sort -t '_' -k 3n | head -$NFILES`
 filelistfull=`eos ls $EOSpath/$ERA | grep $runnumber`
 
+NTOT=`echo $filelistfull | wc -w`
+if [ $NFILES -gt $NTOT ]
+then
+  NFILES=$NTOT
+fi
+echo "Will run on $NFILES files over the $NTOT available"
 
-echo "files that will be used:"
-fullpathfilelist=""
-for file in `echo $filelist`
-do
- fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/$file',"
-done
-fullpathfilelist=`echo $fullpathfilelist | sed 's/.$//'`
-echo $fullpathfilelist
-
-if [ "$fullpathfilelist" = "" ]
+if [ $NTOT -eq 0 ]
 then
  echo "No file found in $EOSpath/$ERA for run $runnumber"
  exit
 fi
 
+echo $filelist > filelist.txt
+
 echo "--------------------------"
 
+
+
+######################
+# Checking PU in files
+
+IFILE=1
+PUfilelist=""
+rm -f SiStripHitEffHistos_run${runnumber}_*.root
+for file in `echo $filelist`
+do
+
+  FILEID=`echo $file | awk -F'_' '{print $3} '| sed -e 's/.root//'`
+  if [[ "$FILEID" == "" ]]
+  then
+    FILEID="0"
+  fi
+  echo "RUNNING ON FILE $FILEID: $file"
+  fullpathfile="'root://eoscms//eos/cms$EOSpath/$ERA/$file'"
+
+  cp SiStripHitEff_template.py "SiStripHitEff_run$runnumber.py"
+  sed -i "s/newrun/$runnumber/g" "SiStripHitEff_run$runnumber.py"
+  sed -i "s|'root://eoscms//eos/cms/newfilelocation'|$fullpathfile|g" "SiStripHitEff_run$runnumber.py"
+
+  rm -f BadModules_input.txt
+
+  cmsRun "SiStripHitEff_run$runnumber.py" >& "run_${runnumber}_$FILEID.log"
+  mv "SiStripHitEffHistos_run$runnumber.root" "SiStripHitEffHistos_run${runnumber}_$FILEID.root"
+  PUfilelist+="SiStripHitEffHistos_run${runnumber}_$FILEID.root,"
+
+  IFILE=$((IFILE+1))
+done
+
+
+# Analyzing the PU info in the output files
+#echo $PUfilelist
+echo "Analysing PU conditions ..."
+echo ""
+rm -f goodPU_filelist.txt
+python3 analyse_files_PU.py $PUfilelist >& "run_${runnumber}_PU.log"
+cat run_${runnumber}_PU.log
+
+# Cleaned list of files
+if [ -f goodPU_filelist.txt ]
+then
+  goodfilelist=`cat goodPU_filelist.txt`
+else
+  echo "Missing file 'goodPU_filelist.txt'"
+  exit
+fi
+
+NGOOD=`echo $goodfilelist | wc -w`
+if [ $NGOOD -eq 0 ]
+then
+ echo "No calibTree file with stable PU conditions for run $runnumber"
+ exit
+fi
+
+echo "files that will be used:"
+fullpathfilelist=""
+for file in `echo $goodfilelist`
+do
+  FILEID=`echo $file | awk -F'_' '{print $3} '| sed -e 's/.root//'`
+  if [[ "$FILEID" == "0" ]]
+  then
+    fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/calibTree_$runnumber.root',"
+  else
+    fullpathfilelist+="'root://eoscms//eos/cms$EOSpath/$ERA/calibTree_${runnumber}_$FILEID.root',"
+  fi
+done
+fullpathfilelist=`echo $fullpathfilelist | sed 's/.$//'`
+echo $fullpathfilelist
+
+echo "--------------------------"
+
+
+
+
+######################
+# Lauching production
 
 #cp dbfile_31X_IdealConditions.db dbfile.db
 
@@ -226,14 +304,17 @@ cat run_$runnumber.log | awk 'BEGIN{doprint=0}{if(match($0,"New IOV")!=0) doprin
 cat run_$runnumber.log | awk 'BEGIN{doprint=0}{if(match($0,"occupancy")!=0) doprint=1;if(match($0,"efficiency")!=0) doprint=1; if(match($0,"%MSG")!=0) {doprint=0;} if(match($0,"tempfilename")!=0) {doprint=0;} if(match($0,"New IOV")!=0) {doprint=0;} if(match($0,"generation")!=0) {doprint=0;} if(doprint==1) print $0}' > EfficiencyResults_$runnumber.txt
 
 mv run_$runnumber.log run_${runnumber}_withMasking.log
+cp  
 
 StoreOutputs withMasking
 
 rm BadModules.log
+#rm -f SiStripHitEffHistos_run${runnumber}_*.root
 
 
 # produce and store trend plots
 
 ./TrendPlots.sh $ERA
+
 
 echo "Done."
