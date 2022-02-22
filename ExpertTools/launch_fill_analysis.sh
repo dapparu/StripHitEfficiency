@@ -6,8 +6,7 @@ if [ $# != 1 ]; then
   exit 0;
 fi
 
-#FILLNUMBER=$1
-FILLNUMBER=7264
+FILLNUMBER=$1
 echo Analyzing fill $FILLNUMBER
 
 # the script guesses that all needed codes are in the current directory
