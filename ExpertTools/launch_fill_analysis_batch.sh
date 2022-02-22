@@ -26,13 +26,14 @@ FIRST=true
 
 echo "List of good runs in fill:"
 rm -f runshortlist.txt
+rm -f filelist.txt
 while read RUN DATASET_TYPE DATASET FILL PIX STRIP TRACKING TRIGGERS
 do
   if [ "$FILL" == "$1" -a "$TRACKING" == "GOOD" ]
-#  if [ "$FILL" == "$1" ]
   then
      echo " $RUN"
      echo $RUN >> runshortlist.txt
+     $CODEDIR/list_run_files.sh $RUN | sed -e 's/,/\n/g' -e "s/'//g" >> filelist.txt
 	 FILELISTTEMP=`$CODEDIR/list_run_files.sh $RUN`
      SHORTFILELISTTEMP=`$CODEDIR/list_run_files.sh $RUN 2`
      FILELISTTEMPEXP=`echo $FILELISTTEMP | sed -e 's/,/,\\\n/g'`
@@ -77,8 +78,13 @@ if [ -d $WORKDIR ]
   else
     mkdir ${WORKDIR}
 	cd ${WORKDIR}
+    mkdir jobs_output 
 fi
 
+
+# Copy run list and file list in workdir 
+cp $CODEDIR/runlist.txt .
+cp $CODEDIR/filelist.txt .
 
 # First pass with only two files per run
 echo "Bad channels identification"
@@ -99,54 +105,18 @@ echo "Full analysis using batch"
 
 NFILES=`echo -e $FILELISTEXPANDED | wc -l`
 NFILESPERJOB=10
-NJOBS=$(( $NFILES/$NFILESPERJOB ))
+NJOBS=$(( $NFILES/$NFILESPERJOB +1))
 NENDFILES=$(( $NFILES%$NFILESPERJOB ))
 
+$NJOBS > njobs.txt
+cp njobs.txt $WORKDIR
+
+cp $CODEDIR/SiStripHitEff_HTCondor_fill_template.py SiStripHitEff_HTCondor_fill.py
 #echo $NFILES = $NJOBS * $NFILESPERJOB + $NENDFILES
+sed -i "s/FIRSTRUN/$FIRSTRUN/g" SiStripHitEff_HTCondor_fill.py
+sed -i "s/LASTRUN/$LASTRUN/g" SiStripHitEff_HTCondor_fill.py
+sed -i "s/FILLNUMBER/$FILLNUMBER/g" SiStripHitEff_HTCondor_fill.py
 
-for (( I=1; I<=$NJOBS; I++ ))
-do
-  NLINES=$(( $I*$NFILESPERJOB ))
-  FIRSTLINE=$(( ($I-1)*$NFILESPERJOB+1 ))
-  LASTLINE=$(( $I*$NFILESPERJOB ))
-  echo files $FIRSTLINE - $LASTLINE
-  LISTTEMP=""
-  for FILE in `echo -e $FILELISTEXPANDED | sed -n -e ''$FIRSTLINE','$LASTLINE'p' | sed -e '$s/,$//'`
-  do
-    LISTTEMP+=$FILE
-  done
-  #echo $LISTTEMP
-  echo 'launching job' $I
-  cp $CODEDIR/SiStripHitEff_fill_template.py SiStripHitEff_fill${FILLNUMBER}_$I.py
-  sed -i "s/FIRSTRUN/$FIRSTRUN/g" SiStripHitEff_fill${FILLNUMBER}_$I.py
-  sed -i "s/LASTRUN/$LASTRUN/g" SiStripHitEff_fill${FILLNUMBER}_$I.py
-  sed -i "s/FILLNUMBER/$FILLNUMBER\_$I/g" SiStripHitEff_fill${FILLNUMBER}_$I.py
-  sed -i "s|FILELIST|$LISTTEMP|g" SiStripHitEff_fill${FILLNUMBER}_$I.py
-  bsub -q1nh $CODEDIR/cmsRun_batch_eos $CODEDIR $WORKDIR/SiStripHitEff_fill${FILLNUMBER}_$I.py $WORKDIR/BadModules_input.txt $WORKDIR
-done
-
-# sending last job for remaining files
-if [ $NENDFILES -gt 0 ]
-then
-  FIRSTLINE=$(( $NJOBS*$NFILESPERJOB+1 ))
-  LASTLINE=$NFILES
-  echo files $FIRSTLINE - $LASTLINE
-  LISTTEMP=""
-  for FILE in `echo -e $FILELISTEXPANDED | sed -n -e ''$FIRSTLINE','$LASTLINE'p' | sed -e '$s/,$//'`
-  do
-    LISTTEMP+=$FILE
-  done
-  LASTJOB=$(( $NJOBS+1 ))
-  #echo $LISTTEMP
-  echo 'launching job' $LASTJOB
-  cp $CODEDIR/SiStripHitEff_fill_template.py SiStripHitEff_fill${FILLNUMBER}_$LASTJOB.py
-  sed -i "s/FIRSTRUN/$FIRSTRUN/g" SiStripHitEff_fill${FILLNUMBER}_$LASTJOB.py
-  sed -i "s/LASTRUN/$LASTRUN/g" SiStripHitEff_fill${FILLNUMBER}_$LASTJOB.py
-  sed -i "s/FILLNUMBER/$FILLNUMBER\_$LASTJOB/g" SiStripHitEff_fill${FILLNUMBER}_$LASTJOB.py
-  sed -i "s|FILELIST|$LISTTEMP|g" SiStripHitEff_fill${FILLNUMBER}_$LASTJOB.py
-  bsub -q1nh $CODEDIR/cmsRun_batch_eos $CODEDIR $WORKDIR/SiStripHitEff_fill${FILLNUMBER}_$LASTJOB.py $WORKDIR/BadModules_input.txt $WORKDIR
-fi
-
-echo $LASTJOB > njobs.txt
+condor_submit $CODEDIR/job.sub workdir=$CODEDIR/$WORKDIR codedir=$CODEDIR njobs=$NJOBS nfilesperjob=$NFILESPERJOB 
 
 echo "Results in $WORKDIR"

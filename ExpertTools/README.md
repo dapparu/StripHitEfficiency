@@ -1,8 +1,8 @@
 # Tools and recipe to produce results for a fill:
 
-## Use WBM to list the fills
+## Use OMS to list the fills
 
-`https://cmswbm.cern.ch`
+`https://cmsoms.cern.ch`
 
 ## Check the quality of data in a fill
 
@@ -28,15 +28,15 @@ It launches a first cmsRun job on 2 calibTree files per run to produce a list of
 Then it launches intereactively a second cmsRun job on all the files to produce the results. The results are stored localy in a directory *Fill_FILLNUMBER*.
 It uses the `SiStripHitEff_fill_template.py` configuration file.
 
-## Produce the results using batch (when more than 10 files to run on)
+## Produce the results using HTCondor (when more than 10 files to run on)
 
 `./launch_fill_analysis_batch.sh FILLNUMBER`
 
 It launches a first cmsRun job on 2 calibTree files per run to produce a list of inefficient modules.
-The second pass job is splitted in jobs sent to the lxplus batch (each job runs on 10 files, by default).
-It uses the `cmsRun_batch_eos` script for the jobs on the batch and results are stored in the directory *Fill_FILLNUMBER_temp*.
+The second pass job is splitted in jobs sent to HTCondor (each job runs on 10 files, by default).
+It uses the `job.sub` file and the `cmsRun_batch_eos` script for the jobs on HTCondor and results are stored in the directory *Fill_FILLNUMBER_temp*.
  
-## Check the status of the job sent to the batch
+## Check the status of the job sent to HTCondor
 
 `./check_jobs_results.sh RESULTS_DIRECTORY`
 
@@ -47,7 +47,7 @@ It prints also the remaining inefficient modules. It is good to check that no mo
 
 ## Clean the merged file and recompute the efficiencies
 
-`python2.6 RecomputeEfficiencies.py INPUTFILE`
+`python3 RecomputeEfficiencies.py INPUTFILE`
 
 Only the histograms are correctly merged in the previous step using the ROOT hadd command. This script recomputes correctly the efficiencies from the histograms and save the TGraphs. The output file is named *SiStripHitEffHistos_fill_merged.root* .
 

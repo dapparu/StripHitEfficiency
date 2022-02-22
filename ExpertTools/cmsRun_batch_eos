@@ -5,14 +5,12 @@
 if [ "$1" = "" ] 
 then
     echo " Need a CMSSW version. exit."
-    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE) (STOREDIR)"
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE)"
     exit
 fi
 
 # CMSSW directory
 CMSSWDIR=$1
-# storage directory
-STOREDIR=$CMSSWDIR/$4
 
 #starting directory
 echo "You are working here : "
@@ -28,11 +26,11 @@ cd -
 # $2 : config file
 if [ "$2" != "" ] 
   then
-    echo "cp $CMSSWDIR/$2 ."
-    cp $CMSSWDIR/$2 . 
+    echo "cp $2 ."
+    cp $2 .
   else
     echo " Need a configuration file. exit."
-    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE) (STOREDIR)"
+    echo " Syntax : cmsRun_batch_eos CMSSWDIR configfile.cfg (INPUTFILE)(NOFJOBS)(NOFFILESPERJOB)"
     exit
 fi
 configfile=`echo $2 | awk -F/ '{print $NF}' | awk -F. '{print $1}'`
@@ -45,35 +43,34 @@ if [ "$3" != "" ] ; then
     cp $CMSSWDIR/$3 .
 fi
 
-echo "cmsRun ${configfile}_temp.py"
-cmsRun ${configfile}_temp.py
+# copy bad modules file
+BADMODULEFILE=$CMSSWDIR/BadModules_input.txt
+if [ -f "$BADMODULEFILE" ]; then
+        echo "cp $CMSSWDIR/BadModules_input.txt ."
+        cp $CMSSWDIR/BadModules_input.txt .
+fi
+
+# $4 : job number 
+JOBNUMBER=1
+if [ "$4" != "" ] ; then
+    JOBNUMBER=$4
+fi
+
+# $5 : number of files per job
+NOFFILESPERJOB=1
+if [ "$5" != "" ] ; then
+    NOFFILESPERJOB=$5
+fi
+
+sed -i "s/.root/_${JOBNUMBER}.root/g" ${configfile}_temp.py
+
+echo "cmsRun ${configfile}_temp.py FileList=$3 JobNumber=$JOBNUMBER NofFilesPerJob=$NOFFILESPERJOB"
+cmsRun ${configfile}_temp.py FileList=$3 JobNumber=$JOBNUMBER NofFilesPerJob=$NOFFILESPERJOB
 
 echo
 ls -lhrt
 echo
 
-# print the content of the last .log file
-LOGFILE=`ls -rt | grep .log | tail -1`
-cLOGFILE=`echo $LOGFILE | wc -c`
-if [ $cLOGFILE -gt 3 ] ; then
- if [ -f $LOGFILE ] ;  then
-    echo "Logfile : $LOGFILE"
-    echo ">>>>>>>>>>>>>>>>>>>>"
-    cat $LOGFILE
-    echo ">>>>>>>>>>>>>>>>>>>>"
- fi
-fi
-
 echo ""
-
-
-
-# copy the root file  
-for OUTPUT_FILE in `ls -rt | grep .root | tail -1`
-do
-    echo "copy $OUTPUT_FILE to $STOREDIR/$OUTPUT_FILE"  
-    cp $OUTPUT_FILE $STOREDIR/$OUTPUT_FILE &> cp_output
-    cat cp_output
-done                                                                            
 
 exit
