@@ -1,12 +1,27 @@
 import sys
+import json
 import os
 import subprocess
 import math
+import numpy as np
 import ROOT as R
+
+sys.path.append(".")
+
+from EfficiencyCalculator import EfficiencyCalculator
 
 R.gROOT.SetBatch(True)
 R.gStyle.SetOptTitle(1)
 
+
+def fillNumberFromRun(run):
+    f = open("/afs/cern.ch/user/d/dapparu/EPR/CMSSW_11_3_2/src/StripHitEfficiency/ShifterTools/GR18/runlist_all.txt","r")
+    fill=-1
+    for x in f:
+        if x.split(' ')[0]==run:
+            fill=x.split(' ')[1]
+            return int(fill)
+    return int(fill)
 
 def get_layer_name(layer):
   if layer<5: return 'TIB L'+str(layer)
@@ -64,6 +79,7 @@ def add_points(graph, directory, subdir, layer, filter=False):
         low = R.TEfficiency.Bayesian(total, found, .683, 1, 1, False)
         up = R.TEfficiency.Bayesian(total, found, .683, 1, 1, True)
 
+        fill = fillNumberFromRun(run)
 
         # PU info
         hpu = fdir.Get("PU")
@@ -76,13 +92,36 @@ def add_points(graph, directory, subdir, layer, filter=False):
 
 
         # compute expected efficiency
+
+        os.system("cp GR18/fill_"+str(fill)+".txt .")
+
+        command_str1 = "python MakeJson.py fill_"+str(fill)+".txt"
+        command_str2 = "mv good_fill_"+str(fill)+".txt fill"+str(fill)+".json"
+    
+        test_json = os.path.isfile("fill"+str(fill)+".json")
+
+        if test_json ==False :
+            os.system(command_str1)
+            os.system(command_str2)
+            os.system("rm fill_"+str(fill)+".txt")
+
+        fillJson_str = "fill"+str(fill)+".json"
+
+        pred = EfficiencyCalculator()
+        pred.set_pileup(pu)
+        pred.set_fillscheme(fillJson_str)
+        pred.read_inputs("parameters_files/HIPProbPerPU.root","parameters_files/LowPUOffset.root")
         
-        ##########  TO REPLACE
+        ##########  
 
         expected = eff
         if eff == 0 : expected = 1.
+        
+        layer_name = get_layer_name(layer)
+        pred.read_deadtime("parameters_files/Ndeadtime.txt",layer_name)
 
-        expected=offsets[layer-1]-pu*coeffs[layer-1]
+        expected = pred.compute_avg_eff_layer(layer_name)
+        error = np.sqrt(pred.compute_error_avg_eff_layer(layer_name))
 
         ##########
 
